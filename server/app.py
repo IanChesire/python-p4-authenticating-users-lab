@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from flask import Flask, make_response, jsonify, request, session
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
@@ -47,6 +45,33 @@ class ShowArticle(Resource):
             return make_response(article_json, 200)
 
         return {'message': 'Maximum pageview limit reached'}, 401
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.get_json().get('username')
+    user = User.query.filter_by(username=username).first()
+    if user:
+        session['user_id'] = user.id
+        return jsonify({'message': 'Logged in', 'id': user.id, 'username': user.username}), 200
+    else:
+        return jsonify({'message': 'User not found'}), 404
+
+
+@app.route('/logout', methods=['DELETE'])
+def logout():
+    session.pop('user_id', None)
+    return '', 204
+
+
+@app.route('/check_session', methods=['GET'])
+def check_session():
+    user_id = session.get('user_id')
+    if user_id:
+        user = User.query.get(user_id)
+        return jsonify({'message': 'Session active', 'user_id': user_id, 'id': user_id, 'username': user.username}), 200
+    else:
+        return jsonify({}), 401
+
 
 api.add_resource(ClearSession, '/clear')
 api.add_resource(IndexArticle, '/articles')
